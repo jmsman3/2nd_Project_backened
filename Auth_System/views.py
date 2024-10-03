@@ -1,7 +1,7 @@
 from django.shortcuts import render ,redirect
 from rest_framework import viewsets
 from .models import Profile, Follow
-from .serializers import ProfileSerializers ,RegistrationSerializer,UserLoginSerializer ,FollowSerializer
+from .serializers import ProfileSerializers ,RegistrationSerializer,UserLoginSerializer ,FollowSerializer,UserSerializer
 from rest_framework.views import APIView
 #add
 from rest_framework.response import Response
@@ -22,6 +22,7 @@ from rest_framework import filters,pagination
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import  IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 #Filter
 class SpecificPerson(filters.BaseFilterBackend):
     def filter_queryset(self,request , queryset , view):
@@ -45,13 +46,68 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 class ProfileDetails(APIView):
     def get(self,request,id):
-        user = User.objects.get(pk=id)
-        Profileuser = Profile.objects.get(user=user) 
-        serializer = ProfileSerializers(Profileuser)
-        return Response(serializer.data)
+        try:
+            user = User.objects.get(pk=id)
+            Profile_user = Profile.objects.get(user=user) 
+            profile_serializer = ProfileSerializers(Profile_user)
+            user_serilaizer = UserSerializer(user)
+            data = profile_serializer.data
+            data.update(user_serilaizer.data) #combine profile and user data
+            return Response(data ,status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error':'User not found'},status=status.HTTP_400_BAD_REQUEST)
+        except Profile.DoesNotExist:
+            return Response({'error' : 'Profile Does Not Exist'} , status=status.HTTP_400_BAD_REQUEST)
     
-    def put(self,request,id):
-        user = User.objects.get(pk=id)
+    def put(self,request,id , pk=None):
+        try:
+            user = User.objects.get(pk=id)
+            profile_user = Profile.objects.get(user=user)
+
+            #update user fields
+            user_serializer = UserSerializer(user , data=request.data , partial=True)
+            if user_serializer.is_valid():
+                user_serializer.save()
+            
+            #Update Profile Fields
+
+            profile_serializer = ProfileSerializers(profile_user , data=request.data,partial=True)
+            if profile_serializer.is_valid():
+                profile_serializer.save()
+                return Response(profile_serializer.data , status=status.HTTP_200_OK)
+            return Response(profile_serializer.errors , status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist():
+            return Response({'error':'User Does Not Exist'} , status=status.HTTP_404_NOT_FOUND)
+        except Profile.DoesNotExist():
+            return Response({'error':'Profile Does Not Exist'} , status=status.HTTP_404_NOT_FOUND)
+        
+
+class FollowAPIview(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self,request,id):
+        user_to_follow = get_object_or_404(User, id =id)
+        follow, created = Follow.objects.get_or_create(follower = request.user , following = user_to_follow)
+
+        if created:
+            serializer = FollowSerializer(follow)
+            return Response(serializer.data , status=status.HTTP_201_CREATED)
+        else:
+            return Response({"message" : "Already Following this User"} , status=status.HTTP_400_BAD_REQUEST)
+
+class UnfollowAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    def delete(self,request ,id):
+        user_to_unfollow = get_object_or_404(User ,id =id)
+        #check bortoman user onno user k follow kore kina
+        follow = Follow.objects.filter(follower = request.user , following = user_to_unfollow)
+
+        if follow.exists():
+            #jodi follow kore taile delete
+            follow.delete()
+            return Response({"message" : "Unfollow Successfully"} , status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"message" : "You are not following this User"} , status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -132,29 +188,3 @@ class USerLogoutApiview(APIView):
         logout(request)
         return redirect('login')
 
-
-class FollowAPIview(APIView):
-    permission_classes = [IsAuthenticated]
-    def post(self,request,id):
-        user_to_follow = get_object_or_404(User, id =id)
-        follow, created = Follow.objects.get_or_create(follower = request.user , following = user_to_follow)
-
-        if created:
-            serializer = FollowSerializer(follow)
-            return Response(serializer.data , status=status.HTTP_201_CREATED)
-        else:
-            return Response({"message" : "Already Following this User"} , status=status.HTTP_400_BAD_REQUEST)
-
-class UnfollowAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    def delete(self,request ,id):
-        user_to_unfollow = get_object_or_404(User ,id =id)
-        #check bortoman user onno user k follow kore kina
-        follow = Follow.objects.filter(follower = request.user , following = user_to_unfollow)
-
-        if follow.exists():
-            #jodi follow kore taile delete
-            follow.delete()
-            return Response({"message" : "Unfollow Successfully"} , status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response({"message" : "You are not following this User"} , status=status.HTTP_400_BAD_REQUEST)

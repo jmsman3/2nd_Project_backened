@@ -1,19 +1,28 @@
 from django.db import models
 from django.contrib.auth.models import User
 from Auth_System.models import Profile
+
 # Create your models here.
 
 #Post creating Model
 class CreatePost(models.Model):
     post_creator = models.ForeignKey(Profile , on_delete=models.CASCADE , related_name='user_post')
-    image = models.URLField(max_length=300 , blank=True , null=True)
-    video = models.URLField(max_length=300 , blank=True , null=True)
+
+    image = models.URLField(max_length=300 , blank=True , null=True )
+    video = models.URLField(max_length=300 , blank=True , null=True )
     caption = models.TextField()
-    created_at = models.DateField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"post created by {self.post_creator.user.username}"
+    
+    @property
+    def likes_count(self):
+        return self.likes.count()
     
 # Post Like Model 
 class LikePost(models.Model):

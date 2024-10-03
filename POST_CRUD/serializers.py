@@ -18,6 +18,9 @@ class PostSerializer(serializers.ModelSerializer):
     comments = CommentSeralizer(many = True , read_only = True)
     likes = LikeSerializer(many=True , read_only = True)
     post_creator = serializers.StringRelatedField()
+    user_id = serializers.IntegerField(source='post_creator.user.id', read_only=True)
+    likes_count = serializers.IntegerField(read_only=True)  # New field
+
     
     class Meta:
         model = CreatePost

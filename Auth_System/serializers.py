@@ -12,10 +12,12 @@ class ProfileSerializers(serializers.ModelSerializer):
     user = serializers.StringRelatedField(many=False)
     first_name = serializers.CharField(source = 'user.first_name' ,read_only = True)
     last_name = serializers.CharField(source = 'user.last_name' , read_only=True)
+    email = serializers.CharField(source = 'user.email' , read_only = True)
    
     class Meta:
         model = Profile
-        fields = ['id' ,'user' ,'first_name' , 'last_name' ,'bio','location','mobile_no','image']
+        # fields = ['id' ,'user' ,'first_name' , 'last_name' ,'bio','location','mobile_no','image']
+        fields = '__all__'
 
 
 class RegistrationSerializer(serializers.ModelSerializer):

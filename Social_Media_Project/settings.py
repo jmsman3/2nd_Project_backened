@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
 
     # 'https://final-food-project.onrender.com',
+    'https://twond-project-backened.onrender.com',
     'http://127.0.0.1',  # Local developme
     'http://127.0.0.1:8000',
 ]
@@ -162,6 +163,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
+# settings.py
+IMGBB_API_KEY = '59c029e1206724ae1f2e3c30d278d10f'  # Replace with your ImgBB API key
+
 
 
 # Default primary key field type
