@@ -25,6 +25,5 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = CreatePost
         fields = '__all__'
-
-    
+ 
     

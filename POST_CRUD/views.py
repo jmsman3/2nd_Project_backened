@@ -10,10 +10,10 @@ from Auth_System.models import Follow
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404 
 from rest_framework.permissions import IsAuthenticated
+# image upload imports aikahne ase
+from .image_utils import upload_image_to_imgbb, upload_video_to_cloudinary  # Assuming the function is in utils.py
 # Create your views here.
 #----------> Get , Post , Put ,Patch, Delete for Post View
-
-
 
 class Specific_USer_Posts_Find_View(APIView):
     def get(self,request, format=None, user_id=None):    
@@ -32,7 +32,20 @@ class Specific_USer_Posts_Find_View(APIView):
                 return Response({'error' : 'Post Does not Exist'} , status=status.HTTP_400_BAD_REQUEST)
         else:
              return Response({'error' : 'User id not found'} , status=status.HTTP_400_BAD_REQUEST)
+
+# class VideoUploadView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         video_file = request.FILES.get('video')
+#         if not video_file:
+#             return Response({'error': 'No video file provided'}, status=400)
         
+#         video_url = upload_video_to_cloudinary(video_file)
+#         if video_url:
+#             return Response({'video': video_url}, status=201)
+#         return Response({'error': 'Video upload failed'}, status=500)
+    
 class PostApiView(APIView):
     permission_classes =[IsAuthenticatedOrReadOnly]
     #Specific post get
@@ -60,7 +73,21 @@ class PostApiView(APIView):
             data['post_creator'] = request.user.profile
         except Profile.DoesNotExist:
             return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
-    
+        
+        #  image upload
+        if 'image' in request.FILES:
+            image_file = request.FILES['image']
+            image_url = upload_image_to_imgbb(image_file)
+            if image_url:
+                data['image'] = image_url  
+
+        #  video upload
+        if 'video' in request.FILES:
+            video_file = request.FILES['video']
+            video_url = upload_video_to_cloudinary(video_file)
+            if video_url:
+                data['video'] = video_url  
+                
         serializer = PostSerializer(data=data)
         if serializer.is_valid():
             serializer.save(post_creator=request.user.profile)
@@ -107,39 +134,6 @@ class PostApiView(APIView):
             return Response({'message' : "Post deleted Successfully"} , status=status.HTTP_204_NO_CONTENT)
         except CreatePost.DoesNotExist:
             return Response({'error':'Post Does not Exist'} , status=status.HTTP_404_NOT_FOUND)
-
-
-#---------->POST ,DELETE for LikeVIEW 
-# class LikeView(APIView):
-#     permission_classes = [IsAuthenticatedOrReadOnly]
-
-#     def post(self, request, format=None, pk=None):
-#         try:
-#             post = CreatePost.objects.get(pk=pk)
-#             if LikePost.objects.filter(likepost=post, liked_by=request.user.profile).exists():
-#                 return Response({'error': 'You have already liked this post'}, status=status.HTTP_400_BAD_REQUEST)
-#             else:
-#                 LikePost.objects.create(likepost=post, liked_by=request.user.profile)
-#                 return Response({
-#                     'message': 'Liked post successfully',
-#                     'likes_count': post.likes_count  # Return updated likes count
-#                 }, status=status.HTTP_201_CREATED)
-#         except CreatePost.DoesNotExist:
-#             return Response({'error': 'Post does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-#     def delete(self, request, format=None, pk=None):
-#         try:
-#             post = CreatePost.objects.get(pk=pk)
-#             like = LikePost.objects.get(likepost=post, liked_by=request.user.profile)
-#             like.delete()
-#             return Response({
-#                 'message': 'Like removed successfully',
-#                 'likes_count': post.likes_count  # Return updated likes count
-#             }, status=status.HTTP_204_NO_CONTENT)
-#         except CreatePost.DoesNotExist:
-#             return Response({'error': 'Post does not exist'}, status=status.HTTP_404_NOT_FOUND)
-#         except LikePost.DoesNotExist:
-#             return Response({'error': 'You haven’t liked this post'}, status=status.HTTP_404_NOT_FOUND)
 
 
 
@@ -255,178 +249,6 @@ class CommentApiVIew(APIView):
 
 
 
-
-
-
-
-
-
-# class CommentApiVIew(APIView):
-#     permission_classes = [IsAuthenticated]  # Only authenticated users can post comments
-#     def post(self, request, pk=None):
-#         try:
-#             post = CreatePost.objects.get(pk=pk)
-#             data = request.data
-#             data['commentpost'] = post.id
-
-            
-            
-#             # Check if user is authenticated and has a profile
-#             if request.user.is_authenticated:
-#                 data['comment_by'] = request.user.profile.id 
-#             else:
-#                 return Response({'error': 'You must be logged in to comment.'}, status=status.HTTP_403_FORBIDDEN)
-
-#             serializer = CommentSeralizer(data=data)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#         except CreatePost.DoesNotExist:
-#             return Response({'error': 'Post Does Not Exist'}, status=status.HTTP_404_NOT_FOUND)
-        
-#     def get(self, request, pk=None):
-#         if pk:  # Get specific comment
-#             try:
-#                 comment = CommentPost.objects.get(pk=pk)
-#                 serializer = CommentSeralizer(comment)
-#                 return Response(serializer.data, status=status.HTTP_200_OK)
-#             except CommentPost.DoesNotExist:
-#                 return Response({'error': 'Sorry, Comment Not Found'}, status=status.HTTP_404_NOT_FOUND)
-#         else:  # Get all comments
-#             comments = CommentPost.objects.all()
-#             serializer = CommentSeralizer(comments, many=True)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        
-#     def put(self,request,pk=None):
-#         try:
-#             comment = CommentPost.objects.get(pk=pk)
-#             if comment.comment_by != request.user.profile:
-#                 return Response({'error':'permission denied'},status=status.HTTP_403_FORBIDDEN)
-           
-            
-#             serializer = CommentSeralizer(comment, data=request.data, partial=False)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data , status=status.HTTP_200_OK)
-#             return Response(serializer.errors , status=status.HTTP_400_BAD_REQUEST)
-#         except CommentPost.DoesNotExist:
-#             return Response({'error':'Comment Does not Exist'},status=status.HTTP_404_NOT_FOUND) 
-        
-        
-#     def delete(self,request,pk=None):
-#         try:
-#             comment = CommentPost.objects.get(pk=pk)
-#             if comment.comment_by != request.user.profile:
-#                 return Response({'error':'permission denied'},status=status.HTTP_403_FORBIDDEN)
-            
-#             comment.delete()
-#             return Response({'message':'Comment Deleted Successfully'} , status=status.HTTP_204_NO_CONTENT)
-#         except CommentPost.DoesNotExist:
-#             return Response({'error':'Comment Does not Exist'},status=status.HTTP_404_NOT_FOUND) 
-   
-    
-# class CommentApiVIew(APIView):
-    
-#     def post(self, request, pk=None):
-#         try:
-#             post = CreatePost.objects.get(pk=pk)
-#             data = request.data
-#             data['commentpost'] = post.id
-#             data['comment_by'] = request.user.profile.id 
-#             serializer = CommentSeralizer(data=data)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#         except CreatePost.DoesNotExist:
-#             return Response({'error': 'Post Does Not Exist'}, status=status.HTTP_404_NOT_FOUND)
-        
-    
-#     def get(self, request, pk=None):
-#         if pk:  
-#             try:
-#                 comment = CommentPost.objects.get(pk=pk)
-#                 serializer = CommentSeralizer(comment)
-#                 return Response(serializer.data, status=status.HTTP_200_OK)
-#             except CommentPost.DoesNotExist:
-#                 return Response({'error': 'Sorry, Comment Not Found'}, status=status.HTTP_404_NOT_FOUND)
-#         else:  
-#             comments = CommentPost.objects.all()
-#             serializer = CommentSeralizer(comments, many=True)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    
-#     def put(self, request, pk=None):
-#         try:
-#             comment = CommentPost.objects.get(pk=pk)
-#             if comment.comment_by != request.user.profile:
-#                 return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-#             serializer = CommentSeralizer(comment, data=request.data, partial=False)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data, status=status.HTTP_200_OK)
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#         except CommentPost.DoesNotExist:
-#             return Response({'error': 'Comment Does not Exist'}, status=status.HTTP_404_NOT_FOUND)
-
-    
-#     def delete(self, request, pk=None):
-#         try:
-#             comment = CommentPost.objects.get(pk=pk)
-#             if comment.comment_by != request.user.profile:
-#                 return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-#             comment.delete()
-#             return Response({'message': 'Comment deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-#         except CommentPost.DoesNotExist:
-#             return Response({'error': 'Comment does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-        
-# class Particular_User_Apiview(APIView):
-#     def get(self,request,user_id = None):
-#         if user_id:
-#             try:
-#                 #get user profile 
-#                 user = User.objects.get(id = user_id)
-#                 profile = get_object_or_404(Profile, user=user)
-#                 Profile_Serializer = ProfileSerializers(profile) #profile ta serialize korlam
-
-#                 #get all post by the particular user
-#                 posts = CreatePost.objects.filter(post_creator = profile)
-#                 post_serializer = PostSerializer(posts , many=True)
-
-#                 #get all likes by the particular user
-#                 likes = LikePost.objects.filter(liked_by=profile)
-#                 like_serializer = LikeSerializer(likes , many = True)
-
-#                 #get all comment by the Particualr user
-#                 comments = CommentPost.objects.filter(comment_by=profile)
-#                 comment_serializer = CommentSeralizer(comments , many=True) 
-
-#                 #get all followers and follwing by the particular user
-#                 followers = Follow.objects.filter(following=profile)
-#                 following = Follow.objects.filter(follower=profile)
-
-#                 follower_serializer = FollowSerializer(followers,many=True)
-#                 following_serializer = FollowSerializer(following, many=True)
-
-#                 #all combine data 
-#                 data={
-#                     'profile' : Profile_Serializer.data,
-#                     'posts' : post_serializer.data,
-#                     'likes' : like_serializer.data,
-#                     'comments' : comment_serializer.data,
-#                     'followers' : follower_serializer.data,
-#                     'following' : following_serializer.data,
-#                 }
-#                 return Response(data , status=status.HTTP_200_OK)
-#             except Profile.DoesNotExist:
-#                return Response({'error' : 'Profile Does Not Exist'} , status=status.HTTP_404_NOT_FOUND)
-#         else:
-#             return Response({'erros' : 'User id is not Provided here'} ,status=status.HTTP_400_BAD_REQUEST )
 
 class Particular_User_Apiview(APIView):
     def get(self, request, user_id=None):

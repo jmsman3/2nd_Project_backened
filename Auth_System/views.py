@@ -23,6 +23,52 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import  IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+
+from POST_CRUD.image_utils import upload_image_to_imgbb  # Import your upload function
+
+class ProfileDetails(APIView):
+    def get(self, request, id):
+        try:
+            user = User.objects.get(pk=id)
+            profile_user = Profile.objects.get(user=user)
+            profile_serializer = ProfileSerializers(profile_user)
+            user_serializer = UserSerializer(user)
+            data = profile_serializer.data
+            data.update(user_serializer.data)  # Combine profile and user data
+            return Response(data, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
+        except Profile.DoesNotExist:
+            return Response({'error': 'Profile Does Not Exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, id, pk=None):
+        try:
+            user = User.objects.get(pk=id)
+            profile_user = Profile.objects.get(user=user)
+
+            # Update user fields
+            user_serializer = UserSerializer(user, data=request.data, partial=True)
+            if user_serializer.is_valid():
+                user_serializer.save()
+
+            # Handle image upload
+            if 'image' in request.FILES:
+                image_file = request.FILES['image']
+                image_url = upload_image_to_imgbb(image_file)
+                if image_url:
+                    profile_user.image = image_url  # Update profile image with the uploaded URL
+
+            # Update Profile Fields
+            profile_serializer = ProfileSerializers(profile_user, data=request.data, partial=True)
+            if profile_serializer.is_valid():
+                profile_serializer.save()
+                return Response(profile_serializer.data, status=status.HTTP_200_OK)
+            return Response(profile_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'error': 'User Does Not Exist'}, status=status.HTTP_404_NOT_FOUND)
+        except Profile.DoesNotExist:
+            return Response({'error': 'Profile Does Not Exist'}, status=status.HTTP_404_NOT_FOUND)
+        
 #Filter
 class SpecificPerson(filters.BaseFilterBackend):
     def filter_queryset(self,request , queryset , view):
@@ -44,42 +90,42 @@ class ProfileViewSet(viewsets.ModelViewSet):
         user = User.objects.get(id=user_id)  
         serializer.save(user=user)
 
-class ProfileDetails(APIView):
-    def get(self,request,id):
-        try:
-            user = User.objects.get(pk=id)
-            Profile_user = Profile.objects.get(user=user) 
-            profile_serializer = ProfileSerializers(Profile_user)
-            user_serilaizer = UserSerializer(user)
-            data = profile_serializer.data
-            data.update(user_serilaizer.data) #combine profile and user data
-            return Response(data ,status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({'error':'User not found'},status=status.HTTP_400_BAD_REQUEST)
-        except Profile.DoesNotExist:
-            return Response({'error' : 'Profile Does Not Exist'} , status=status.HTTP_400_BAD_REQUEST)
+# class ProfileDetails(APIView):
+#     def get(self,request,id):
+#         try:
+#             user = User.objects.get(pk=id)
+#             Profile_user = Profile.objects.get(user=user) 
+#             profile_serializer = ProfileSerializers(Profile_user)
+#             user_serilaizer = UserSerializer(user)
+#             data = profile_serializer.data
+#             data.update(user_serilaizer.data) #combine profile and user data
+#             return Response(data ,status=status.HTTP_200_OK)
+#         except User.DoesNotExist:
+#             return Response({'error':'User not found'},status=status.HTTP_400_BAD_REQUEST)
+#         except Profile.DoesNotExist:
+#             return Response({'error' : 'Profile Does Not Exist'} , status=status.HTTP_400_BAD_REQUEST)
     
-    def put(self,request,id , pk=None):
-        try:
-            user = User.objects.get(pk=id)
-            profile_user = Profile.objects.get(user=user)
+#     def put(self,request,id , pk=None):
+#         try:
+#             user = User.objects.get(pk=id)
+#             profile_user = Profile.objects.get(user=user)
 
-            #update user fields
-            user_serializer = UserSerializer(user , data=request.data , partial=True)
-            if user_serializer.is_valid():
-                user_serializer.save()
+#             #update user fields
+#             user_serializer = UserSerializer(user , data=request.data , partial=True)
+#             if user_serializer.is_valid():
+#                 user_serializer.save()
             
-            #Update Profile Fields
+#             #Update Profile Fields
 
-            profile_serializer = ProfileSerializers(profile_user , data=request.data,partial=True)
-            if profile_serializer.is_valid():
-                profile_serializer.save()
-                return Response(profile_serializer.data , status=status.HTTP_200_OK)
-            return Response(profile_serializer.errors , status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist():
-            return Response({'error':'User Does Not Exist'} , status=status.HTTP_404_NOT_FOUND)
-        except Profile.DoesNotExist():
-            return Response({'error':'Profile Does Not Exist'} , status=status.HTTP_404_NOT_FOUND)
+#             profile_serializer = ProfileSerializers(profile_user , data=request.data,partial=True)
+#             if profile_serializer.is_valid():
+#                 profile_serializer.save()
+#                 return Response(profile_serializer.data , status=status.HTTP_200_OK)
+#             return Response(profile_serializer.errors , status=status.HTTP_400_BAD_REQUEST)
+#         except User.DoesNotExist():
+#             return Response({'error':'User Does Not Exist'} , status=status.HTTP_404_NOT_FOUND)
+#         except Profile.DoesNotExist():
+#             return Response({'error':'Profile Does Not Exist'} , status=status.HTTP_404_NOT_FOUND)
         
 
 class FollowAPIview(APIView):

@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import dj_database_url
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 import environ
 env = environ.Env()
 environ.Env.read_env() 
@@ -52,6 +55,9 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'rest_framework.authtoken',  # For Token-based Authentication
+
+    'cloudinary',
+    'cloudinary_storage', #cloudinary add korlam
 ]
 # AUTH_USER_MODEL = 'Auth_System.CustomUser'
 
@@ -164,8 +170,18 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 # settings.py
-IMGBB_API_KEY = '59c029e1206724ae1f2e3c30d278d10f'  # Replace with your ImgBB API key
+IMGBB_API_KEY = '59c029e1206724ae1f2e3c30d278d10f'  
+CLOUDINARY_URL = 'cloudinary://982385273458864:vLcqLJs2hQWgCwIqbG82drNQuzs@doxrbnaqy'
 
+# Add your Cloudinary credentials
+# cloudinary.config( 
+#   cloud_name = "doxrbnaqy", 
+#   api_key = "982385273458864", 
+#   api_secret = "vLcqLJs2hQWgCwIqbG82drNQuzs" 
+# )
+
+# Ensure that the `CLOUDINARY_URL` environment variable is set in your `.env` file or directly in `settings.py`
+# CLOUDINARY_URL = 'cloudinary://982385273458864:vLcqLJs2hQWgCwIqbG82drNQuzs@doxrbnaqy'
 
 
 # Default primary key field type
