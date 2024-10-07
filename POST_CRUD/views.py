@@ -271,12 +271,14 @@ class Particular_User_Apiview(APIView):
                         'email': user.email,
                         'first_name' : user.first_name,
                         'last_name' : user.last_name,
+                       
                         
                     },
                     'More Bio-Data':{
                         'bio' : profile.bio,
                         'location': profile.location,
                         'mobile' : profile.mobile_no,
+                        'profile_photo' : profile.image,
 
                     },
                     'posts': PostSerializer(posts, many=True).data,

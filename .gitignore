@@ -1,1 +1,4 @@
 Social_Media_Project/.env
+
+db.sqlite3
+__pycache__/
