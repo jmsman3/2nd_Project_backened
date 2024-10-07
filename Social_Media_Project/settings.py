@@ -113,7 +113,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Social_Media_Project.wsgi.application'
+WSGI_APPLICATION = 'Social_Media_Project.wsgi.app'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
